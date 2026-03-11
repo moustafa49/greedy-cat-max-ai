@@ -2,7 +2,6 @@
 <html>
 
 <head>
-
 <meta charset="UTF-8">
 <title>Greedy Cat Max AI</title>
 
@@ -27,7 +26,7 @@ margin-top:20px;
 
 .foods button{
 padding:15px;
-font-size:16px;
+font-size:20px;
 background:#1e293b;
 color:white;
 border:none;
@@ -51,12 +50,12 @@ padding:8px 12px;
 }
 
 #history{
-font-size:20px;
+font-size:22px;
 margin-top:15px;
 }
 
 #prediction{
-font-size:22px;
+font-size:24px;
 margin-top:20px;
 color:#22c55e;
 }
@@ -73,7 +72,6 @@ padding:10px 15px;
 }
 
 </style>
-
 </head>
 
 <body>
@@ -130,6 +128,19 @@ fish:"🐟",
 shrimp:"🦐",
 cow:"🐄",
 chicken:"🐔"
+}
+
+/* Real probability weights based on wheel */
+
+const baseChance={
+corn:18,
+tomato:18,
+carrot:18,
+pepper:18,
+shrimp:10,
+cow:8,
+fish:6,
+chicken:4
 }
 
 let history=JSON.parse(localStorage.getItem("catHistory"))||[]
@@ -206,11 +217,15 @@ let last=history.lastIndexOf(food)
 
 let absence= last==-1 ? history.length : history.length-last-1
 
-let ai=parseFloat(percent)+absence*2
+/* AI score */
+
+let ai=baseChance[food]
+
+ai+=Math.min(absence*1.5,20)
 
 let recentHits=history.slice(-5).filter(x=>x==food).length
 
-if(recentHits>=2) ai+=10
+ai+=recentHits*5
 
 table+="<tr><td>"+emoji[food]+" "+food+"</td><td>"+count+"</td><td>"+percent+"%</td></tr>"
 
@@ -257,5 +272,4 @@ document.getElementById("wave").innerText=
 </script>
 
 </body>
-
 </html>
