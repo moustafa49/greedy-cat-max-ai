@@ -3,7 +3,7 @@
 <head>
 
 <meta charset="UTF-8">
-<title>Greedy Cat Max AI v5</title>
+<title>Greedy Cat Max AI v6</title>
 
 <style>
 
@@ -59,7 +59,6 @@ padding:10px 15px;
 }
 
 </style>
-
 </head>
 
 <body>
@@ -88,7 +87,7 @@ padding:10px 15px;
 <h3>Last 20 Rounds</h3>
 <div id="history"></div>
 
-<h3>Monte Carlo Probabilities</h3>
+<h3>Probability Model</h3>
 <table id="prob"></table>
 
 <h3>Category Bias</h3>
@@ -105,6 +104,9 @@ padding:10px 15px;
 
 <h3>Heat Map</h3>
 <div id="heatmap"></div>
+
+<h3>Absence</h3>
+<div id="absence"></div>
 
 <script>
 
@@ -172,59 +174,58 @@ pattern()
 
 bias()
 
-simulate()
+model()
 
 }
 
-function simulate(){
+function model(){
 
-let simCount={}
+let counts={}
+foods.forEach(f=>counts[f]=0)
 
-foods.forEach(f=>simCount[f]=0)
-
-for(let i=0;i<5000;i++){
-
-let total=0
-
-foods.forEach(f=>{
-total+=baseChance[f]
-})
-
-let r=Math.random()*total
-
-let acc=0
-
-for(let f of foods){
-
-acc+=baseChance[f]
-
-if(r<=acc){
-
-simCount[f]++
-
-break
-
-}
-
-}
-
-}
+history.forEach(f=>counts[f]++)
 
 let table="<tr><th>Food</th><th>Chance</th></tr>"
 
 let scores=[]
+let absenceText=""
 
-foods.forEach(f=>{
+foods.forEach(food=>{
 
-let p=((simCount[f]/5000)*100).toFixed(1)
+let freq=(counts[food]/history.length||0)*100
 
-table+="<tr><td>"+emoji[f]+" "+f+"</td><td>"+p+"%<div class='bar' style='width:"+p+"%'></div></td></tr>"
+let last=history.lastIndexOf(food)
 
-scores.push({food:f,score:p})
+let absence= last==-1 ? history.length : history.length-last-1
+
+let trend=history.slice(-10).filter(x=>x==food).length
+
+let score=
+
+baseChance[food]*0.5 +
+freq*0.3 +
+absence*1.2 +
+trend*4
+
+scores.push({food:food,score:score})
+
+let bar=Math.min(score,100)
+
+table+=
+"<tr><td>"+emoji[food]+" "+food+
+"</td><td>"+bar.toFixed(1)+"<div class='bar' style='width:"+bar+"%'></div></td></tr>"
+
+let mark=""
+if(absence>=10)mark=" 🔵"
+if(trend>=2)mark=" 🔴"
+
+absenceText+=emoji[food]+" "+absence+mark+"  "
 
 })
 
 document.getElementById("prob").innerHTML=table
+
+document.getElementById("absence").innerText=absenceText
 
 balanced(scores)
 
@@ -252,10 +253,10 @@ let final=[...vegPick,...meatPick]
 document.getElementById("prediction").innerText=
 final.map(x=>emoji[x]).join(" ")
 
-let conf=(vegPick.length*10+meatPick.length*10)
+let conf=Math.round((vegPick.length+meatPick.length)/5*100)
 
 document.getElementById("confidence").innerText=
-conf+"% confidence"
+conf+"% model confidence"
 
 }
 
