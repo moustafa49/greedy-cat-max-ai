@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
-
 <head>
+
 <meta charset="UTF-8">
-<title>Greedy Cat Max AI</title>
+<title>Greedy Cat Max AI v5</title>
 
 <style>
 
@@ -26,17 +26,14 @@ margin-top:20px;
 
 .foods button{
 padding:15px;
-font-size:20px;
+font-size:22px;
 background:#1e293b;
-color:white;
 border:none;
 border-radius:10px;
 cursor:pointer;
 }
 
-.foods button:hover{
-background:#22c55e;
-}
+.foods button:hover{background:#22c55e}
 
 table{
 margin:auto;
@@ -49,22 +46,12 @@ border:1px solid #444;
 padding:8px 12px;
 }
 
-#history{
-font-size:22px;
-margin-top:15px;
+.bar{
+height:10px;
+background:#22c55e;
 }
 
-#prediction{
-font-size:24px;
-margin-top:20px;
-color:#22c55e;
-}
-
-#absence{
-margin-top:20px;
-font-size:20px;
-letter-spacing:6px;
-}
+#history{font-size:22px;margin-top:10px}
 
 .controls button{
 margin:10px;
@@ -72,6 +59,7 @@ padding:10px 15px;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -100,47 +88,39 @@ padding:10px 15px;
 <h3>Last 20 Rounds</h3>
 <div id="history"></div>
 
-<h3>Statistics</h3>
-<table id="stats"></table>
+<h3>Monte Carlo Probabilities</h3>
+<table id="prob"></table>
 
-<h3>Wave</h3>
-<div id="wave"></div>
+<h3>Category Bias</h3>
+<div id="bias"></div>
 
 <h3>Top Picks</h3>
 <div id="prediction"></div>
 
-<h3>Absence</h3>
-<div id="absence"></div>
+<h3>Confidence</h3>
+<div id="confidence"></div>
+
+<h3>Pattern</h3>
+<div id="pattern"></div>
+
+<h3>Heat Map</h3>
+<div id="heatmap"></div>
 
 <script>
 
-const foods=[
-"corn","tomato","carrot","pepper",
-"fish","shrimp","cow","chicken"
-]
+const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
 
 const emoji={
-corn:"🌽",
-tomato:"🍅",
-carrot:"🥕",
-pepper:"🌶️",
-fish:"🐟",
-shrimp:"🦐",
-cow:"🐄",
-chicken:"🐔"
+corn:"🌽",tomato:"🍅",carrot:"🥕",pepper:"🌶️",
+fish:"🐟",shrimp:"🦐",cow:"🐄",chicken:"🐔"
 }
 
-/* Real probability weights based on wheel */
+const veg=["corn","tomato","carrot","pepper"]
+const meat=["fish","shrimp","cow","chicken"]
 
 const baseChance={
-corn:18,
-tomato:18,
-carrot:18,
-pepper:18,
-shrimp:10,
-cow:8,
-fish:6,
-chicken:4
+corn:18,tomato:18,carrot:18,pepper:18,
+shrimp:10,cow:8,fish:6,chicken:4
 }
 
 let history=JSON.parse(localStorage.getItem("catHistory"))||[]
@@ -151,9 +131,7 @@ function add(food){
 
 history.push(food)
 
-if(history.length>600){
-history.shift()
-}
+if(history.length>600)history.shift()
 
 localStorage.setItem("catHistory",JSON.stringify(history))
 
@@ -185,87 +163,132 @@ function update(){
 
 let last20=history.slice(-20)
 
-let display=last20.map(x=>emoji[x]).join(" ")
+document.getElementById("history").innerText=
+last20.map(x=>emoji[x]).join(" ")
 
-document.getElementById("history").innerText=display
+heatmap()
 
-calculate()
+pattern()
+
+bias()
+
+simulate()
 
 }
 
-function calculate(){
+function simulate(){
 
-let total=history.length
+let simCount={}
 
-let counts={}
-foods.forEach(f=>counts[f]=0)
+foods.forEach(f=>simCount[f]=0)
 
-history.forEach(f=>counts[f]++)
+for(let i=0;i<5000;i++){
 
-let table="<tr><th>Food</th><th>Count</th><th>%</th></tr>"
+let total=0
+
+foods.forEach(f=>{
+total+=baseChance[f]
+})
+
+let r=Math.random()*total
+
+let acc=0
+
+for(let f of foods){
+
+acc+=baseChance[f]
+
+if(r<=acc){
+
+simCount[f]++
+
+break
+
+}
+
+}
+
+}
+
+let table="<tr><th>Food</th><th>Chance</th></tr>"
 
 let scores=[]
-let absenceText=""
 
-foods.forEach(food=>{
+foods.forEach(f=>{
 
-let count=counts[food]
+let p=((simCount[f]/5000)*100).toFixed(1)
 
-let percent= total?((count/total)*100).toFixed(1):0
+table+="<tr><td>"+emoji[f]+" "+f+"</td><td>"+p+"%<div class='bar' style='width:"+p+"%'></div></td></tr>"
 
-let last=history.lastIndexOf(food)
-
-let absence= last==-1 ? history.length : history.length-last-1
-
-/* AI score */
-
-let ai=baseChance[food]
-
-ai+=Math.min(absence*1.5,20)
-
-let recentHits=history.slice(-5).filter(x=>x==food).length
-
-ai+=recentHits*5
-
-table+="<tr><td>"+emoji[food]+" "+food+"</td><td>"+count+"</td><td>"+percent+"%</td></tr>"
-
-scores.push({food:food,score:ai})
-
-let mark=""
-
-if(absence>=10) mark=" 🔵"
-if(recentHits>=2) mark=" 🔴"
-
-absenceText+=emoji[food]+" "+absence+mark+"   "
+scores.push({food:f,score:p})
 
 })
 
-document.getElementById("stats").innerHTML=table
+document.getElementById("prob").innerHTML=table
 
-scores.sort((a,b)=>b.score-a.score)
-
-let picks=scores.slice(0,5).map(x=>emoji[x.food])
-
-document.getElementById("prediction").innerText=picks.join(" ")
-
-document.getElementById("absence").innerText=absenceText
-
-wave()
+balanced(scores)
 
 }
 
-function wave(){
+function balanced(scores){
 
-let veg=["corn","tomato","carrot","pepper"]
-let meat=["fish","shrimp","cow","chicken"]
+scores.sort((a,b)=>b.score-a.score)
 
-let last10=history.slice(-10)
+let vegPick=[]
+let meatPick=[]
 
-let vegCount=last10.filter(x=>veg.includes(x)).length
-let meatCount=last10.filter(x=>meat.includes(x)).length
+scores.forEach(x=>{
 
-document.getElementById("wave").innerText=
-"Vegetables "+vegCount+" | Meat "+meatCount
+if(veg.includes(x.food)&&vegPick.length<3)
+vegPick.push(x.food)
+
+if(meat.includes(x.food)&&meatPick.length<2)
+meatPick.push(x.food)
+
+})
+
+let final=[...vegPick,...meatPick]
+
+document.getElementById("prediction").innerText=
+final.map(x=>emoji[x]).join(" ")
+
+let conf=(vegPick.length*10+meatPick.length*10)
+
+document.getElementById("confidence").innerText=
+conf+"% confidence"
+
+}
+
+function bias(){
+
+let last20=history.slice(-20)
+
+let v=last20.filter(x=>veg.includes(x)).length
+let m=last20.filter(x=>meat.includes(x)).length
+
+let t=v+m
+
+let vp=((v/t)*100||0).toFixed(0)
+let mp=((m/t)*100||0).toFixed(0)
+
+document.getElementById("bias").innerText=
+"Vegetables "+vp+"% | Meat "+mp+"%"
+
+}
+
+function pattern(){
+
+if(history.length<3)return
+
+document.getElementById("pattern").innerText=
+history.slice(-3).map(x=>emoji[x]).join(" ")
+
+}
+
+function heatmap(){
+
+document.getElementById("heatmap").innerText=
+history.slice(-30).map(x=>emoji[x]).join(" ")
 
 }
 
