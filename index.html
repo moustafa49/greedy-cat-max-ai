@@ -1,29 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<title>Greedy Cat Predictor</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+padding:20px;
+}
+
+h1{
+color:#22c55e;
+}
+
+input{
+padding:10px;
+font-size:16px;
+}
+
+button{
+padding:10px 20px;
+margin-left:10px;
+cursor:pointer;
+}
+
+#history{
+margin-top:20px;
+}
+
+#prediction{
+margin-top:20px;
+font-size:22px;
+color:#22c55e;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Greedy Cat Predictor</h1>
+
+<input id="resultInput" placeholder="enter result">
+
+<button onclick="addResult()">
+Add Result
+</button>
+
+<h3>History</h3>
+
+<div id="history"></div>
+
+<h3>Top Picks</h3>
+
+<div id="prediction"></div>
+
 <script>
 
-const foods = [
-"corn",
-"tomato",
-"carrot",
-"pepper",
-"fish",
-"shrimp",
-"cow",
-"chicken"
+const foods=[
+"corn","tomato","carrot","pepper",
+"fish","shrimp","cow","chicken"
 ]
 
-let history = []
+let history=[]
 
 function addResult(){
 
-let value =
-document.getElementById("resultInput").value.toLowerCase()
+let value=document
+.getElementById("resultInput")
+.value.toLowerCase()
 
 if(!value) return
 
 history.push(value)
 
-document.getElementById("history").innerText =
-history.join(" → ")
+document.getElementById("history")
+.innerText=history.join(" → ")
 
 predict()
 
@@ -31,56 +91,58 @@ predict()
 
 function predict(){
 
-let score = {}
+let score={}
 
-foods.forEach(food=>{
-score[food] = 0
-})
+foods.forEach(f=>score[f]=0)
 
 history.forEach((food,i)=>{
 
-score[food] += 2
+score[food]+=2
 
-if(i > history.length-5){
-score[food] += 4
+if(i>history.length-5){
+score[food]+=3
 }
 
 })
 
 foods.forEach(food=>{
 
-let lastIndex = history.lastIndexOf(food)
+let last=history.lastIndexOf(food)
 
-if(lastIndex == -1){
+if(last==-1){
 
-score[food] += 3
+score[food]+=2
 
 }else{
 
-let gap = history.length - lastIndex
+let gap=history.length-last
 
-if(gap > 7){
-score[food] += 5
+if(gap>6){
+score[food]+=4
 }
 
 }
 
 })
 
-if(history.slice(-1)[0] == "chicken"){
-score["chicken"] -= 10
+if(history.slice(-1)[0]=="chicken"){
+score["chicken"]-=10
 }
 
-let sorted =
-Object.entries(score)
+let sorted=Object
+.entries(score)
 .sort((a,b)=>b[1]-a[1])
 
-let top5 =
-sorted.slice(0,5).map(x=>x[0])
+let picks=
+sorted.slice(0,5)
+.map(x=>x[0])
 
-document.getElementById("prediction").innerText =
-top5.join(" , ")
+document.getElementById("prediction")
+.innerText=picks.join(" , ")
 
 }
 
 </script>
+
+</body>
+</html>
