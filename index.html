@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
-<title>Greedy Cat Max AI</title>
+<title>Greedy Cat Max AI ULTRA</title>
 
 <style>
 
@@ -24,7 +25,7 @@ margin-top:20px;
 }
 
 .foods button{
-padding:15px;
+padding:14px;
 font-size:26px;
 background:#1e293b;
 border:none;
@@ -34,32 +35,47 @@ cursor:pointer;
 
 .foods button:hover{background:#22c55e}
 
-.controls button{
-margin:10px;
-padding:10px 15px;
+.section{margin-top:25px}
+
+.strategy{
+background:#1e293b;
+padding:10px;
+border-radius:10px;
+margin-top:10px;
+font-size:18px;
 }
 
-.bar{
-height:10px;
-background:#22c55e;
-}
+.safe{border-left:6px solid #22c55e}
+.balanced{border-left:6px solid #eab308}
+.aggressive{border-left:6px solid #ef4444}
 
 table{
 margin:auto;
-margin-top:20px;
+margin-top:10px;
 border-collapse:collapse;
 }
 
 td,th{
-border:1px solid #444;
-padding:8px 12px;
+border:1px solid #334155;
+padding:6px 10px;
 }
 
-#history{font-size:22px;margin-top:10px}
+.bar{
+height:8px;
+background:#22c55e;
+border-radius:5px;
+}
 
-.section{
-margin-top:20px;
-font-size:20px;
+#overlay{
+position:fixed;
+bottom:10px;
+right:10px;
+background:#111827;
+padding:12px;
+border-radius:12px;
+box-shadow:0 0 12px rgba(0,0,0,0.6);
+font-size:16px;
+display:none;
 }
 
 </style>
@@ -69,12 +85,14 @@ font-size:20px;
 
 <h1>Greedy Cat Max AI</h1>
 
+<button onclick="toggleOverlay()">Toggle Overlay</button>
+
 <div class="foods">
 
 <button onclick="add('corn')">🌽</button>
 <button onclick="add('tomato')">🍅</button>
 <button onclick="add('carrot')">🥕</button>
-<button onclick="add('pepper')">🌶️</button>
+<button onclick="add('pepper')">🌶</button>
 
 <button onclick="add('fish')">🐟</button>
 <button onclick="add('shrimp')">🦐</button>
@@ -83,13 +101,13 @@ font-size:20px;
 
 </div>
 
-<div class="controls">
+<div class="section">
 <button onclick="undo()">Undo</button>
 <button onclick="reset()">Reset</button>
 </div>
 
 <div class="section">
-<h3>Last 20 Rounds</h3>
+<h3>Last 20</h3>
 <div id="history"></div>
 </div>
 
@@ -99,30 +117,45 @@ font-size:20px;
 </div>
 
 <div class="section">
-<h3>Prediction Strategies</h3>
-<div id="safe"></div>
-<div id="balanced"></div>
-<div id="aggressive"></div>
+<h3>Strategies</h3>
+<div id="safe" class="strategy safe"></div>
+<div id="balanced" class="strategy balanced"></div>
+<div id="aggressive" class="strategy aggressive"></div>
 </div>
 
 <div class="section">
-<h3>Category Bias</h3>
-<div id="bias"></div>
+<h3>Confidence</h3>
+<div id="confidence"></div>
 </div>
 
 <div class="section">
-<h3>Cycle Detector</h3>
-<div id="cycle"></div>
+<h3>Suggested Bet</h3>
+<div id="autobet"></div>
 </div>
 
 <div class="section">
-<h3>Monte Carlo Simulation</h3>
-<div id="simulation"></div>
+<h3>Wave Detector</h3>
+<div id="wave"></div>
 </div>
 
 <div class="section">
-<h3>Pattern</h3>
-<div id="pattern"></div>
+<h3>Bias Detector</h3>
+<div id="biasdetect"></div>
+</div>
+
+<div class="section">
+<h3>Pattern Prediction</h3>
+<div id="patternpredict"></div>
+</div>
+
+<div class="section">
+<h3>Next Round</h3>
+<div id="nextforecast"></div>
+</div>
+
+<div class="section">
+<h3>Session Reset Detector</h3>
+<div id="sessionreset"></div>
 </div>
 
 <div class="section">
@@ -130,9 +163,8 @@ font-size:20px;
 <div id="heatmap"></div>
 </div>
 
-<div class="section">
-<h3>Absence</h3>
-<div id="absence"></div>
+<div id="overlay">
+<div id="overlayPrediction"></div>
 </div>
 
 <script>
@@ -140,7 +172,7 @@ font-size:20px;
 const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
 
 const emoji={
-corn:"🌽",tomato:"🍅",carrot:"🥕",pepper:"🌶️",
+corn:"🌽",tomato:"🍅",carrot:"🥕",pepper:"🌶",
 fish:"🐟",shrimp:"🦐",cow:"🐄",chicken:"🐔"
 }
 
@@ -157,35 +189,22 @@ let history=JSON.parse(localStorage.getItem("catHistory"))||[]
 update()
 
 function add(food){
-
 history.push(food)
-
-if(history.length>600) history.shift()
-
+if(history.length>600)history.shift()
 localStorage.setItem("catHistory",JSON.stringify(history))
-
 update()
-
 }
 
 function undo(){
-
 history.pop()
-
 localStorage.setItem("catHistory",JSON.stringify(history))
-
 update()
-
 }
 
 function reset(){
-
 history=[]
-
 localStorage.removeItem("catHistory")
-
 update()
-
 }
 
 function update(){
@@ -195,11 +214,15 @@ let last20=history.slice(-20)
 document.getElementById("history").innerText=
 last20.map(x=>emoji[x]).join(" ")
 
-heatmap()
-pattern()
-bias()
-detectCycle()
 model()
+
+heatmap()
+
+patternPrediction()
+
+waveDetector()
+
+sessionResetDetector()
 
 }
 
@@ -213,7 +236,6 @@ history.forEach(f=>counts[f]++)
 let table="<tr><th>Food</th><th>Score</th></tr>"
 
 let scores=[]
-let absenceText=""
 
 foods.forEach(food=>{
 
@@ -226,10 +248,10 @@ let absence= last==-1 ? history.length : history.length-last-1
 let trend=history.slice(-10).filter(x=>x==food).length
 
 let score=
-baseChance[food]*0.5+
-freq*0.4+
-absence*1.2+
-trend*4
+baseChance[food]*0.4+
+freq*0.5+
+absence*0.5+
+trend*3
 
 scores.push({food:food,score:score})
 
@@ -239,19 +261,19 @@ table+="<tr><td>"+emoji[food]+" "+food+
 "</td><td>"+bar.toFixed(1)+
 "<div class='bar' style='width:"+bar+"%'></div></td></tr>"
 
-let mark=""
-if(absence>=10) mark=" 🔵"
-if(trend>=2) mark=" 🔴"
-
-absenceText+=emoji[food]+" "+absence+mark+"  "
-
 })
 
 document.getElementById("prob").innerHTML=table
-document.getElementById("absence").innerText=absenceText
 
 strategy(scores)
-monteCarlo(scores)
+
+confidence(scores)
+
+autoBet(scores)
+
+hiddenBias(scores)
+
+nextForecast(scores)
 
 }
 
@@ -264,126 +286,141 @@ let meatScores=scores.filter(x=>meat.includes(x.food))
 
 function build(v,m){
 
-let final=[
-...vegScores.slice(0,v),
-...meatScores.slice(0,m)
-]
+let final=[...vegScores.slice(0,v),...meatScores.slice(0,m)]
 
 let total=final.reduce((s,x)=>s+x.score,0)
 
-return final.map(x=>{
-let p=Math.round((x.score/total)*100)
-return emoji[x.food]+" "+p+"%"
-}).join("  ")
+return final.map(x=>emoji[x.food]+" "+Math.round(x.score/total*100)+"%").join(" ")
 
 }
 
 document.getElementById("safe").innerText="SAFE: "+build(3,3)
-
-let vegStrength=vegScores.slice(0,3).reduce((s,x)=>s+x.score,0)
-let meatStrength=meatScores.slice(0,3).reduce((s,x)=>s+x.score,0)
-
-if(vegStrength>=meatStrength)
 document.getElementById("balanced").innerText="BALANCED: "+build(3,2)
-else
-document.getElementById("balanced").innerText="BALANCED: "+build(2,3)
-
 document.getElementById("aggressive").innerText="AGGRESSIVE: "+build(2,2)
 
-}
-
-function monteCarlo(scores){
-
-let simCount={}
-foods.forEach(f=>simCount[f]=0)
-
-let spins=10000
-
-for(let i=0;i<spins;i++){
-
-let total=0
-scores.forEach(x=> total+=x.score)
-
-let r=Math.random()*total
-let acc=0
-
-for(let x of scores){
-
-acc+=x.score
-
-if(r<=acc){
-simCount[x.food]++
-break
-}
+document.getElementById("overlayPrediction").innerText=build(3,2)
 
 }
 
+function confidence(scores){
+
+scores.sort((a,b)=>b.score-a.score)
+
+let total=scores.reduce((s,x)=>s+x.score,0)
+let best=scores[0].score
+
+document.getElementById("confidence").innerText=
+((best/total)*100).toFixed(1)+"%"
+
 }
 
-let result=foods.map(f=>{
+function autoBet(scores){
 
-let p=((simCount[f]/spins)*100).toFixed(1)
-return emoji[f]+" "+p+"%"
+scores.sort((a,b)=>b.score-a.score)
 
-})
+let picks=scores.slice(0,4)
 
-document.getElementById("simulation").innerText=result.join("  ")
+document.getElementById("autobet").innerText=
+picks.map(x=>emoji[x.food]).join(" ")
 
 }
 
-function detectCycle(){
+function hiddenBias(scores){
 
-if(history.length<6) return
+scores.sort((a,b)=>b.score-a.score)
 
-let last=history.slice(-3).join("-")
+let avg=scores.reduce((s,x)=>s+x.score,0)/scores.length
+let top=scores[0]
 
+if(top.score-avg>8)
+document.getElementById("biasdetect").innerText=emoji[top.food]+" boosted"
+else
+document.getElementById("biasdetect").innerText="No bias"
+
+}
+
+function nextForecast(scores){
+
+scores.sort((a,b)=>b.score-a.score)
+
+let top=scores.slice(0,3)
+
+document.getElementById("nextforecast").innerText=
+top.map(x=>emoji[x.food]).join(" ")
+
+}
+
+function waveDetector(){
+
+let last30=history.slice(-30)
+
+let vegCount=last30.filter(x=>veg.includes(x)).length
+let meatCount=last30.filter(x=>meat.includes(x)).length
+
+if(vegCount>meatCount*1.5)
+document.getElementById("wave").innerText="Vegetable wave"
+
+else if(meatCount>vegCount*1.5)
+document.getElementById("wave").innerText="Meat wave"
+
+else
+document.getElementById("wave").innerText="Balanced"
+
+}
+
+function sessionResetDetector(){
+
+if(history.length<40)return
+
+let recent=history.slice(-20)
+let previous=history.slice(-40,-20)
+
+let diff=0
+
+for(let i=0;i<20;i++)
+if(recent[i]!=previous[i])diff++
+
+if(diff>12)
+document.getElementById("sessionreset").innerText="Session reset likely"
+
+else
+document.getElementById("sessionreset").innerText="Session stable"
+
+}
+
+function patternPrediction(){
+
+if(history.length<10)return
+
+let last=history[history.length-1]
+
+let next={}
+foods.forEach(f=>next[f]=0)
+
+for(let i=0;i<history.length-1;i++)
+if(history[i]==last)
+next[history[i+1]]++
+
+let best=null
 let count=0
 
-for(let i=0;i<history.length-3;i++){
+for(let f in next)
+if(next[f]>count){count=next[f];best=f}
 
-let seq=history.slice(i,i+3).join("-")
-
-if(seq==last) count++
-
-}
-
-let confidence=Math.min(count*20,100)
-
-document.getElementById("cycle").innerText=
-history.slice(-3).map(x=>emoji[x]).join(" ")+" repeating | confidence "+confidence+"%"
-
-}
-
-function bias(){
-
-let last20=history.slice(-20)
-
-let v=last20.filter(x=>veg.includes(x)).length
-let m=last20.filter(x=>meat.includes(x)).length
-
-let t=v+m
-
-let vp=((v/t)*100||0).toFixed(0)
-let mp=((m/t)*100||0).toFixed(0)
-
-document.getElementById("bias").innerText="Vegetables "+vp+"% | Meat "+mp+"%"
-
-}
-
-function pattern(){
-
-if(history.length<3)return
-
-document.getElementById("pattern").innerText=
-history.slice(-3).map(x=>emoji[x]).join(" ")
+if(best)
+document.getElementById("patternpredict").innerText=
+"After "+emoji[last]+" → "+emoji[best]
 
 }
 
 function heatmap(){
-
 document.getElementById("heatmap").innerText=
 history.slice(-30).map(x=>emoji[x]).join(" ")
+}
 
+function toggleOverlay(){
+let o=document.getElementById("overlay")
+o.style.display=o.style.display=="none"?"block":"none"
 }
 
 </script>
