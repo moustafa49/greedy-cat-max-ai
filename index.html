@@ -16,9 +16,7 @@ text-align:center;
 padding:20px;
 }
 
-h1{
-color:#22c55e;
-}
+h1{color:#22c55e}
 
 .foods{
 display:grid;
@@ -41,11 +39,6 @@ cursor:pointer;
 background:#22c55e;
 }
 
-#history{
-margin-top:20px;
-font-size:18px;
-}
-
 table{
 margin:auto;
 margin-top:20px;
@@ -57,10 +50,26 @@ border:1px solid #444;
 padding:8px 12px;
 }
 
+#history{
+font-size:20px;
+margin-top:15px;
+}
+
 #prediction{
-margin-top:20px;
 font-size:22px;
+margin-top:20px;
 color:#22c55e;
+}
+
+#absence{
+margin-top:20px;
+font-size:20px;
+letter-spacing:6px;
+}
+
+.controls button{
+margin:10px;
+padding:10px 15px;
 }
 
 </style>
@@ -73,33 +82,37 @@ color:#22c55e;
 
 <div class="foods">
 
-<button onclick="add('corn')">🌽 Corn</button>
-<button onclick="add('tomato')">🍅 Tomato</button>
-<button onclick="add('carrot')">🥕 Carrot</button>
-<button onclick="add('pepper')">🫑 Pepper</button>
+<button onclick="add('corn')">🌽</button>
+<button onclick="add('tomato')">🍅</button>
+<button onclick="add('carrot')">🥕</button>
+<button onclick="add('pepper')">🌶️</button>
 
-<button onclick="add('fish')">🐟 Fish</button>
-<button onclick="add('shrimp')">🍤 Shrimp</button>
-<button onclick="add('cow')">🐄 Cow</button>
-<button onclick="add('chicken')">🐔 Chicken</button>
+<button onclick="add('fish')">🐟</button>
+<button onclick="add('shrimp')">🦐</button>
+<button onclick="add('cow')">🐄</button>
+<button onclick="add('chicken')">🐔</button>
 
 </div>
 
-<h3>History</h3>
+<div class="controls">
+<button onclick="undo()">Undo</button>
+<button onclick="reset()">Reset</button>
+</div>
+
+<h3>Last 20 Rounds</h3>
 <div id="history"></div>
 
 <h3>Statistics</h3>
+<table id="stats"></table>
 
-<table id="stats">
-<tr>
-<th>Food</th>
-<th>Count</th>
-<th>%</th>
-</tr>
-</table>
+<h3>Wave</h3>
+<div id="wave"></div>
 
 <h3>Top Picks</h3>
 <div id="prediction"></div>
+
+<h3>Absence</h3>
+<div id="absence"></div>
 
 <script>
 
@@ -108,11 +121,50 @@ const foods=[
 "fish","shrimp","cow","chicken"
 ]
 
-let history=[]
+const emoji={
+corn:"🌽",
+tomato:"🍅",
+carrot:"🥕",
+pepper:"🌶️",
+fish:"🐟",
+shrimp:"🦐",
+cow:"🐄",
+chicken:"🐔"
+}
+
+let history=JSON.parse(localStorage.getItem("catHistory"))||[]
+
+update()
 
 function add(food){
 
 history.push(food)
+
+if(history.length>600){
+history.shift()
+}
+
+localStorage.setItem("catHistory",JSON.stringify(history))
+
+update()
+
+}
+
+function undo(){
+
+history.pop()
+
+localStorage.setItem("catHistory",JSON.stringify(history))
+
+update()
+
+}
+
+function reset(){
+
+history=[]
+
+localStorage.removeItem("catHistory")
 
 update()
 
@@ -120,8 +172,11 @@ update()
 
 function update(){
 
-document.getElementById("history").innerText=
-history.join(" → ")
+let last20=history.slice(-20)
+
+let display=last20.map(x=>emoji[x]).join(" ")
+
+document.getElementById("history").innerText=display
 
 calculate()
 
@@ -132,31 +187,41 @@ function calculate(){
 let total=history.length
 
 let counts={}
-
 foods.forEach(f=>counts[f]=0)
 
-history.forEach(food=>{
-counts[food]++
-})
+history.forEach(f=>counts[f]++)
 
-let table=
-"<tr><th>Food</th><th>Count</th><th>%</th></tr>"
+let table="<tr><th>Food</th><th>Count</th><th>%</th></tr>"
 
 let scores=[]
+let absenceText=""
 
 foods.forEach(food=>{
 
 let count=counts[food]
 
-let percent= total? ((count/total)*100).toFixed(1):0
+let percent= total?((count/total)*100).toFixed(1):0
 
-table+=
-"<tr><td>"+food+"</td><td>"+count+"</td><td>"+percent+"%</td></tr>"
+let last=history.lastIndexOf(food)
 
-scores.push({
-food:food,
-score:percent
-})
+let absence= last==-1 ? history.length : history.length-last-1
+
+let ai=parseFloat(percent)+absence*2
+
+let recentHits=history.slice(-5).filter(x=>x==food).length
+
+if(recentHits>=2) ai+=10
+
+table+="<tr><td>"+emoji[food]+" "+food+"</td><td>"+count+"</td><td>"+percent+"%</td></tr>"
+
+scores.push({food:food,score:ai})
+
+let mark=""
+
+if(absence>=10) mark=" 🔵"
+if(recentHits>=2) mark=" 🔴"
+
+absenceText+=emoji[food]+" "+absence+mark+"   "
 
 })
 
@@ -164,10 +229,28 @@ document.getElementById("stats").innerHTML=table
 
 scores.sort((a,b)=>b.score-a.score)
 
-let top5=scores.slice(0,5).map(x=>x.food)
+let picks=scores.slice(0,5).map(x=>emoji[x.food])
 
-document.getElementById("prediction").innerText=
-top5.join(" , ")
+document.getElementById("prediction").innerText=picks.join(" ")
+
+document.getElementById("absence").innerText=absenceText
+
+wave()
+
+}
+
+function wave(){
+
+let veg=["corn","tomato","carrot","pepper"]
+let meat=["fish","shrimp","cow","chicken"]
+
+let last10=history.slice(-10)
+
+let vegCount=last10.filter(x=>veg.includes(x)).length
+let meatCount=last10.filter(x=>meat.includes(x)).length
+
+document.getElementById("wave").innerText=
+"Vegetables "+vegCount+" | Meat "+meatCount
 
 }
 
