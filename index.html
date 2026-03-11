@@ -1,7 +1,7 @@
 <!DOCTYPE html><html>
 <head>
 <meta charset="UTF-8">
-<title>Greedy Cat Max AI NEXUS</title><style>
+<title>Greedy Cat Max AI OMEGA</title><style>
 
 body{
 font-family:Arial;
@@ -34,10 +34,14 @@ cursor:pointer;
 background:#334155;
 }
 
+.section{
+margin-top:16px;
+}
+
 .strategy{
 width:80%;
 margin:auto;
-margin-top:10px;
+margin-top:8px;
 padding:10px;
 border-radius:6px;
 }
@@ -46,21 +50,7 @@ border-radius:6px;
 .balanced{background:#92400e}
 .aggressive{background:#7f1d1d}
 
-.section{
-margin-top:16px;
-}
-
-table{
-margin:auto;
-border-collapse:collapse;
-}
-
-td,th{
-padding:6px 10px;
-border:1px solid #334155;
-}
-
-</style></head><body><h1>Greedy Cat Max AI NEXUS</h1><div class="foods"><button onclick="add('corn')">🌽</button>
+</style></head><body><h1>Greedy Cat Max AI OMEGA</h1><div class="foods"><button onclick="add('corn')">🌽</button>
 <button onclick="add('tomato')">🍅</button>
 <button onclick="add('carrot')">🥕</button>
 <button onclick="add('pepper')">🌶</button>
@@ -77,22 +67,22 @@ border:1px solid #334155;
 <h3>Last 20 Rounds</h3>
 <div id="history"></div>
 </div><div class="section">
-<h3>Probability Model</h3>
-<table id="stats"></table>
+<h3>Suggested Bet</h3>
+<div id="bet"></div>
 </div><div class="strategy safe" id="safe"></div>
 <div class="strategy balanced" id="balanced"></div>
 <div class="strategy aggressive" id="aggressive"></div><div class="section">
 <h3>Confidence</h3>
 <div id="confidence"></div>
 </div><div class="section">
-<h3>Suggested Bet</h3>
-<div id="bet"></div>
+<h3>Wave Detector</h3>
+<div id="wave"></div>
+</div><div class="section">
+<h3>Bias Detector</h3>
+<div id="bias"></div>
 </div><div class="section">
 <h3>Trap Detector</h3>
 <div id="trap"></div>
-</div><div class="section">
-<h3>Trap Risk</h3>
-<div id="traprisk"></div>
 </div><div class="section">
 <h3>Cycle Detector</h3>
 <div id="cycle"></div>
@@ -108,6 +98,12 @@ border:1px solid #334155;
 </div><div class="section">
 <h3>Absence</h3>
 <div id="absence"></div>
+</div><div class="section">
+<h3>Monte Carlo Simulation</h3>
+<div id="monte"></div>
+</div><div class="section">
+<h3>Hot / Cold Indicator</h3>
+<div id="hotcold"></div>
 </div><div class="section">
 <h3>AI Accuracy</h3>
 <div id="accuracy"></div>
@@ -131,7 +127,6 @@ chicken:"🐔"
 
 let history=JSON.parse(localStorage.getItem("gc_history"))||[]
 let weights=JSON.parse(localStorage.getItem("gc_weights"))||{}
-
 let correct=JSON.parse(localStorage.getItem("gc_correct"))||0
 let predictions=JSON.parse(localStorage.getItem("gc_predictions"))||0
 
@@ -140,12 +135,10 @@ if(!weights[f]) weights[f]=1
 })
 
 function save(){
-
 localStorage.setItem("gc_history",JSON.stringify(history.slice(-600)))
 localStorage.setItem("gc_weights",JSON.stringify(weights))
 localStorage.setItem("gc_correct",correct)
 localStorage.setItem("gc_predictions",predictions)
-
 }
 
 function add(food){
@@ -156,11 +149,9 @@ predictions++
 
 if(window.lastPrediction.includes(food)){
 correct++
-weights[food]+=0.25
+weights[food]+=0.2
 }else{
-window.lastPrediction.forEach(p=>{
-weights[p]-=0.08
-})
+window.lastPrediction.forEach(p=>weights[p]-=0.05)
 }
 
 }
@@ -187,15 +178,20 @@ save()
 update()
 }
 
-function count(food){
-return history.filter(x=>x==food).length
+function count(f){
+return history.filter(x=>x==f).length
 }
 
-function absence(food){
+function absence(f){
+
 for(let i=history.length-1;i>=0;i--){
-if(history[i]==food) return history.length-i-1
+
+if(history[i]==f) return history.length-i-1
+
 }
+
 return history.length
+
 }
 
 function update(){
@@ -213,7 +209,7 @@ let freq=count(f)
 let miss=absence(f)
 let trend=history.slice(-10).filter(x=>x==f).length
 
-let score=(freq*1.2)+(miss*0.9)+(trend*3)+(weights[f]*6)
+let score=(freq*1.2)+(miss*0.9)+(trend*2)+(weights[f]*4)
 
 stats[f]=score
 
@@ -231,31 +227,42 @@ window.lastPrediction=picks
 document.getElementById("bet").innerHTML=
 picks.map(x=>emoji[x]).join(" ")
 
-let conf=Math.min(95,(picks.reduce((a,b)=>a+stats[b],0)/30)*10)
+document.getElementById("future").innerHTML=
+picks.slice(0,3).map(x=>emoji[x]).join(" → ")
 
 document.getElementById("confidence").innerHTML=
-conf.toFixed(1)+"%"
+(Math.min(90,picks.reduce((a,b)=>a+stats[b],0)/20*10)).toFixed(1)+"%"
+
+let vegCount=last20.filter(x=>veg.includes(x)).length
+let meatCount=last20.filter(x=>meat.includes(x)).length
+
+document.getElementById("wave").innerHTML=
+vegCount>meatCount?"Vegetable wave":"Meat wave"
+
+document.getElementById("bias").innerHTML=
+emoji[sorted[0][0]]+" hot"
 
 let last5=history.slice(-5)
 
 let trap=false
 
 if(last5.length==5){
+
 let f=last5[0]
+
 trap=last5.every(x=>x==f)
+
 }
 
 document.getElementById("trap").innerHTML=
-trap?"⚠ Possible bait pattern":"No trap"
-
-document.getElementById("traprisk").innerHTML=
-Math.min(90,absence(sorted[0][0])*2)+"%"
+trap?"⚠ Possible trap":"No trap"
 
 let cycle="None"
 
 if(history.length>6){
 
 let a=history.slice(-4,-2).join()
+
 let b=history.slice(-2).join()
 
 if(a==b) cycle="Pattern repeating"
@@ -267,14 +274,58 @@ document.getElementById("cycle").innerHTML=cycle
 document.getElementById("pattern").innerHTML=
 last20.slice(-3).map(x=>emoji[x]).join(" → ")
 
-document.getElementById("future").innerHTML=
-picks.slice(0,3).map(x=>emoji[x]).join(" → ")
-
 document.getElementById("heat").innerHTML=
 history.slice(-40).map(x=>emoji[x]).join(" ")
 
 document.getElementById("absence").innerHTML=
 foods.map(f=>emoji[f]+" "+absence(f)).join(" | ")
+
+let sim={}
+
+foods.forEach(f=>sim[f]=0)
+
+for(let i=0;i<10000;i++){
+
+let total=Object.values(stats).reduce((a,b)=>a+b)
+
+let r=Math.random()*total
+
+let acc=0
+
+for(let f in stats){
+
+acc+=stats[f]
+
+if(r<=acc){
+
+sim[f]++
+
+break
+
+}
+
+}
+
+}
+
+let monte=""
+
+foods.forEach(f=>{
+
+let p=(sim[f]/10000*100).toFixed(1)
+
+monte+=emoji[f]+" "+p+"% "
+
+})
+
+document.getElementById("monte").innerHTML=monte
+
+let hot=sorted.slice(0,2).map(x=>emoji[x[0]]).join(" ")
+
+let cold=sorted.slice(-2).map(x=>emoji[x[0]]).join(" ")
+
+document.getElementById("hotcold").innerHTML=
+"🔥 Hot: "+hot+" | ❄ Cold: "+cold
 
 document.getElementById("safe").innerHTML=
 "SAFE: "+sorted.slice(0,5).map(x=>emoji[x[0]]).join(" ")
@@ -285,7 +336,7 @@ document.getElementById("balanced").innerHTML=
 document.getElementById("aggressive").innerHTML=
 "AGGRESSIVE: "+sorted.slice(0,3).map(x=>emoji[x[0]]).join(" ")
 
-let acc = predictions ? ((correct/predictions)*100).toFixed(1) : 0
+let acc=predictions?((correct/predictions)*100).toFixed(1):0
 
 document.getElementById("accuracy").innerHTML=
 acc+"% ("+correct+"/"+predictions+")"
