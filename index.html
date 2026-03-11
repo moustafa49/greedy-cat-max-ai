@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
-<title>Greedy Cat Max AI v6</title>
+<title>Greedy Cat Max AI</title>
 
 <style>
 
@@ -26,7 +25,7 @@ margin-top:20px;
 
 .foods button{
 padding:15px;
-font-size:22px;
+font-size:26px;
 background:#1e293b;
 border:none;
 border-radius:10px;
@@ -34,6 +33,16 @@ cursor:pointer;
 }
 
 .foods button:hover{background:#22c55e}
+
+.controls button{
+margin:10px;
+padding:10px 15px;
+}
+
+.bar{
+height:10px;
+background:#22c55e;
+}
 
 table{
 margin:auto;
@@ -46,16 +55,11 @@ border:1px solid #444;
 padding:8px 12px;
 }
 
-.bar{
-height:10px;
-background:#22c55e;
-}
-
 #history{font-size:22px;margin-top:10px}
 
-.controls button{
-margin:10px;
-padding:10px 15px;
+.section{
+margin-top:20px;
+font-size:20px;
 }
 
 </style>
@@ -84,29 +88,52 @@ padding:10px 15px;
 <button onclick="reset()">Reset</button>
 </div>
 
+<div class="section">
 <h3>Last 20 Rounds</h3>
 <div id="history"></div>
+</div>
 
+<div class="section">
 <h3>Probability Model</h3>
 <table id="prob"></table>
+</div>
 
+<div class="section">
+<h3>Prediction Strategies</h3>
+<div id="safe"></div>
+<div id="balanced"></div>
+<div id="aggressive"></div>
+</div>
+
+<div class="section">
 <h3>Category Bias</h3>
 <div id="bias"></div>
+</div>
 
-<h3>Top Picks</h3>
-<div id="prediction"></div>
+<div class="section">
+<h3>Cycle Detector</h3>
+<div id="cycle"></div>
+</div>
 
-<h3>Confidence</h3>
-<div id="confidence"></div>
+<div class="section">
+<h3>Monte Carlo Simulation</h3>
+<div id="simulation"></div>
+</div>
 
+<div class="section">
 <h3>Pattern</h3>
 <div id="pattern"></div>
+</div>
 
+<div class="section">
 <h3>Heat Map</h3>
 <div id="heatmap"></div>
+</div>
 
+<div class="section">
 <h3>Absence</h3>
 <div id="absence"></div>
+</div>
 
 <script>
 
@@ -133,7 +160,7 @@ function add(food){
 
 history.push(food)
 
-if(history.length>600)history.shift()
+if(history.length>600) history.shift()
 
 localStorage.setItem("catHistory",JSON.stringify(history))
 
@@ -169,11 +196,9 @@ document.getElementById("history").innerText=
 last20.map(x=>emoji[x]).join(" ")
 
 heatmap()
-
 pattern()
-
 bias()
-
+detectCycle()
 model()
 
 }
@@ -185,7 +210,7 @@ foods.forEach(f=>counts[f]=0)
 
 history.forEach(f=>counts[f]++)
 
-let table="<tr><th>Food</th><th>Chance</th></tr>"
+let table="<tr><th>Food</th><th>Score</th></tr>"
 
 let scores=[]
 let absenceText=""
@@ -201,62 +226,131 @@ let absence= last==-1 ? history.length : history.length-last-1
 let trend=history.slice(-10).filter(x=>x==food).length
 
 let score=
-
-baseChance[food]*0.5 +
-freq*0.3 +
-absence*1.2 +
+baseChance[food]*0.5+
+freq*0.4+
+absence*1.2+
 trend*4
 
 scores.push({food:food,score:score})
 
 let bar=Math.min(score,100)
 
-table+=
-"<tr><td>"+emoji[food]+" "+food+
-"</td><td>"+bar.toFixed(1)+"<div class='bar' style='width:"+bar+"%'></div></td></tr>"
+table+="<tr><td>"+emoji[food]+" "+food+
+"</td><td>"+bar.toFixed(1)+
+"<div class='bar' style='width:"+bar+"%'></div></td></tr>"
 
 let mark=""
-if(absence>=10)mark=" 🔵"
-if(trend>=2)mark=" 🔴"
+if(absence>=10) mark=" 🔵"
+if(trend>=2) mark=" 🔴"
 
 absenceText+=emoji[food]+" "+absence+mark+"  "
 
 })
 
 document.getElementById("prob").innerHTML=table
-
 document.getElementById("absence").innerText=absenceText
 
-balanced(scores)
+strategy(scores)
+monteCarlo(scores)
 
 }
 
-function balanced(scores){
+function strategy(scores){
 
 scores.sort((a,b)=>b.score-a.score)
 
-let vegPick=[]
-let meatPick=[]
+let vegScores=scores.filter(x=>veg.includes(x.food))
+let meatScores=scores.filter(x=>meat.includes(x.food))
 
-scores.forEach(x=>{
+function build(v,m){
 
-if(veg.includes(x.food)&&vegPick.length<3)
-vegPick.push(x.food)
+let final=[
+...vegScores.slice(0,v),
+...meatScores.slice(0,m)
+]
 
-if(meat.includes(x.food)&&meatPick.length<2)
-meatPick.push(x.food)
+let total=final.reduce((s,x)=>s+x.score,0)
+
+return final.map(x=>{
+let p=Math.round((x.score/total)*100)
+return emoji[x.food]+" "+p+"%"
+}).join("  ")
+
+}
+
+document.getElementById("safe").innerText="SAFE: "+build(3,3)
+
+let vegStrength=vegScores.slice(0,3).reduce((s,x)=>s+x.score,0)
+let meatStrength=meatScores.slice(0,3).reduce((s,x)=>s+x.score,0)
+
+if(vegStrength>=meatStrength)
+document.getElementById("balanced").innerText="BALANCED: "+build(3,2)
+else
+document.getElementById("balanced").innerText="BALANCED: "+build(2,3)
+
+document.getElementById("aggressive").innerText="AGGRESSIVE: "+build(2,2)
+
+}
+
+function monteCarlo(scores){
+
+let simCount={}
+foods.forEach(f=>simCount[f]=0)
+
+let spins=10000
+
+for(let i=0;i<spins;i++){
+
+let total=0
+scores.forEach(x=> total+=x.score)
+
+let r=Math.random()*total
+let acc=0
+
+for(let x of scores){
+
+acc+=x.score
+
+if(r<=acc){
+simCount[x.food]++
+break
+}
+
+}
+
+}
+
+let result=foods.map(f=>{
+
+let p=((simCount[f]/spins)*100).toFixed(1)
+return emoji[f]+" "+p+"%"
 
 })
 
-let final=[...vegPick,...meatPick]
+document.getElementById("simulation").innerText=result.join("  ")
 
-document.getElementById("prediction").innerText=
-final.map(x=>emoji[x]).join(" ")
+}
 
-let conf=Math.round((vegPick.length+meatPick.length)/5*100)
+function detectCycle(){
 
-document.getElementById("confidence").innerText=
-conf+"% model confidence"
+if(history.length<6) return
+
+let last=history.slice(-3).join("-")
+
+let count=0
+
+for(let i=0;i<history.length-3;i++){
+
+let seq=history.slice(i,i+3).join("-")
+
+if(seq==last) count++
+
+}
+
+let confidence=Math.min(count*20,100)
+
+document.getElementById("cycle").innerText=
+history.slice(-3).map(x=>emoji[x]).join(" ")+" repeating | confidence "+confidence+"%"
 
 }
 
@@ -272,8 +366,7 @@ let t=v+m
 let vp=((v/t)*100||0).toFixed(0)
 let mp=((m/t)*100||0).toFixed(0)
 
-document.getElementById("bias").innerText=
-"Vegetables "+vp+"% | Meat "+mp+"%"
+document.getElementById("bias").innerText="Vegetables "+vp+"% | Meat "+mp+"%"
 
 }
 
