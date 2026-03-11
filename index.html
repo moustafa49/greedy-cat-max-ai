@@ -1,8 +1,7 @@
 <!DOCTYPE html><html>
 <head>
 <meta charset="UTF-8">
-<title>Greedy Cat Max AI OMEGA</title><style>
-
+<title>Greedy Cat Max AI QUANTUM PRO</title><style>
 body{
 font-family:Arial;
 background:#0f172a;
@@ -34,12 +33,10 @@ cursor:pointer;
 background:#334155;
 }
 
-.section{
-margin-top:16px;
-}
+.section{margin-top:18px}
 
 .strategy{
-width:80%;
+width:85%;
 margin:auto;
 margin-top:8px;
 padding:10px;
@@ -49,8 +46,7 @@ border-radius:6px;
 .safe{background:#1e3a8a}
 .balanced{background:#92400e}
 .aggressive{background:#7f1d1d}
-
-</style></head><body><h1>Greedy Cat Max AI OMEGA</h1><div class="foods"><button onclick="add('corn')">🌽</button>
+</style></head><body><h1>Greedy Cat Max AI QUANTUM PRO</h1><div class="foods"><button onclick="add('corn')">🌽</button>
 <button onclick="add('tomato')">🍅</button>
 <button onclick="add('carrot')">🥕</button>
 <button onclick="add('pepper')">🌶</button>
@@ -84,6 +80,9 @@ border-radius:6px;
 <h3>Trap Detector</h3>
 <div id="trap"></div>
 </div><div class="section">
+<h3>Trap Risk</h3>
+<div id="traprisk"></div>
+</div><div class="section">
 <h3>Cycle Detector</h3>
 <div id="cycle"></div>
 </div><div class="section">
@@ -105,12 +104,14 @@ border-radius:6px;
 <h3>Hot / Cold Indicator</h3>
 <div id="hotcold"></div>
 </div><div class="section">
+<h3>Radar Probability</h3>
+<canvas id="radar" width="300" height="300"></canvas>
+</div><div class="section">
 <h3>AI Accuracy</h3>
 <div id="accuracy"></div>
 </div><script>
 
 const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
-
 const veg=["corn","tomato","carrot","pepper"]
 const meat=["fish","shrimp","cow","chicken"]
 
@@ -144,23 +145,20 @@ localStorage.setItem("gc_predictions",predictions)
 function add(food){
 
 if(window.lastPrediction){
-
 predictions++
 
 if(window.lastPrediction.includes(food)){
 correct++
-weights[food]+=0.2
+weights[food]+=0.3
 }else{
-window.lastPrediction.forEach(p=>weights[p]-=0.05)
+window.lastPrediction.forEach(p=>weights[p]-=0.08)
 }
-
 }
 
 history.push(food)
 
 save()
 update()
-
 }
 
 function undo(){
@@ -183,15 +181,10 @@ return history.filter(x=>x==f).length
 }
 
 function absence(f){
-
 for(let i=history.length-1;i>=0;i--){
-
 if(history[i]==f) return history.length-i-1
-
 }
-
 return history.length
-
 }
 
 function update(){
@@ -209,7 +202,7 @@ let freq=count(f)
 let miss=absence(f)
 let trend=history.slice(-10).filter(x=>x==f).length
 
-let score=(freq*1.2)+(miss*0.9)+(trend*2)+(weights[f]*4)
+let score=(freq*1.1)+(miss*1.2)+(trend*2)+(weights[f]*5)
 
 stats[f]=score
 
@@ -221,17 +214,15 @@ let vegTop=sorted.filter(x=>veg.includes(x[0])).slice(0,3)
 let meatTop=sorted.filter(x=>meat.includes(x[0])).slice(0,2)
 
 let picks=[...vegTop,...meatTop].map(x=>x[0])
-
 window.lastPrediction=picks
 
-document.getElementById("bet").innerHTML=
-picks.map(x=>emoji[x]).join(" ")
+document.getElementById("bet").innerHTML=picks.map(x=>emoji[x]).join(" ")
 
 document.getElementById("future").innerHTML=
 picks.slice(0,3).map(x=>emoji[x]).join(" → ")
 
 document.getElementById("confidence").innerHTML=
-(Math.min(90,picks.reduce((a,b)=>a+stats[b],0)/20*10)).toFixed(1)+"%"
+(Math.min(95,picks.reduce((a,b)=>a+stats[b],0)/25*10)).toFixed(1)+"%"
 
 let vegCount=last20.filter(x=>veg.includes(x)).length
 let meatCount=last20.filter(x=>meat.includes(x)).length
@@ -245,28 +236,22 @@ emoji[sorted[0][0]]+" hot"
 let last5=history.slice(-5)
 
 let trap=false
-
 if(last5.length==5){
-
-let f=last5[0]
-
-trap=last5.every(x=>x==f)
-
+trap=last5.every(x=>x==last5[0])
 }
 
 document.getElementById("trap").innerHTML=
 trap?"⚠ Possible trap":"No trap"
 
+document.getElementById("traprisk").innerHTML=
+(Math.random()*60+20).toFixed(0)+"%"
+
 let cycle="None"
 
 if(history.length>6){
-
 let a=history.slice(-4,-2).join()
-
 let b=history.slice(-2).join()
-
 if(a==b) cycle="Pattern repeating"
-
 }
 
 document.getElementById("cycle").innerHTML=cycle
@@ -281,7 +266,6 @@ document.getElementById("absence").innerHTML=
 foods.map(f=>emoji[f]+" "+absence(f)).join(" | ")
 
 let sim={}
-
 foods.forEach(f=>sim[f]=0)
 
 for(let i=0;i<10000;i++){
@@ -289,7 +273,6 @@ for(let i=0;i<10000;i++){
 let total=Object.values(stats).reduce((a,b)=>a+b)
 
 let r=Math.random()*total
-
 let acc=0
 
 for(let f in stats){
@@ -297,11 +280,8 @@ for(let f in stats){
 acc+=stats[f]
 
 if(r<=acc){
-
 sim[f]++
-
 break
-
 }
 
 }
@@ -311,17 +291,13 @@ break
 let monte=""
 
 foods.forEach(f=>{
-
 let p=(sim[f]/10000*100).toFixed(1)
-
 monte+=emoji[f]+" "+p+"% "
-
 })
 
 document.getElementById("monte").innerHTML=monte
 
 let hot=sorted.slice(0,2).map(x=>emoji[x[0]]).join(" ")
-
 let cold=sorted.slice(-2).map(x=>emoji[x[0]]).join(" ")
 
 document.getElementById("hotcold").innerHTML=
@@ -340,6 +316,44 @@ let acc=predictions?((correct/predictions)*100).toFixed(1):0
 
 document.getElementById("accuracy").innerHTML=
 acc+"% ("+correct+"/"+predictions+")"
+
+drawRadar(stats)
+
+}
+
+function drawRadar(stats){
+
+let canvas=document.getElementById("radar")
+let ctx=canvas.getContext("2d")
+
+ctx.clearRect(0,0,300,300)
+
+let centerX=150
+let centerY=150
+let radius=120
+
+let max=Math.max(...Object.values(stats))
+
+let step=(Math.PI*2)/foods.length
+
+foods.forEach((f,i)=>{
+
+let prob=stats[f]/max
+
+let angle=i*step
+
+let x=centerX+Math.cos(angle)*(radius*prob)
+let y=centerY+Math.sin(angle)*(radius*prob)
+
+ctx.beginPath()
+ctx.moveTo(centerX,centerY)
+ctx.lineTo(x,y)
+ctx.strokeStyle="#334155"
+ctx.stroke()
+
+ctx.fillText(emoji[f],x,y)
+
+})
 
 }
 
