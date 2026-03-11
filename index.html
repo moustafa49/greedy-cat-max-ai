@@ -4,7 +4,7 @@
 <head>
 
 <meta charset="UTF-8">
-<title>Greedy Cat Predictor</title>
+<title>Greedy Cat Max AI</title>
 
 <style>
 
@@ -20,19 +20,41 @@ h1{
 color:#22c55e;
 }
 
-input{
-padding:10px;
-font-size:16px;
+.foods{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:10px;
+margin-top:20px;
 }
 
-button{
-padding:10px 20px;
-margin-left:10px;
+.foods button{
+padding:15px;
+font-size:16px;
+background:#1e293b;
+color:white;
+border:none;
+border-radius:10px;
 cursor:pointer;
+}
+
+.foods button:hover{
+background:#22c55e;
 }
 
 #history{
 margin-top:20px;
+font-size:18px;
+}
+
+table{
+margin:auto;
+margin-top:20px;
+border-collapse:collapse;
+}
+
+td,th{
+border:1px solid #444;
+padding:8px 12px;
 }
 
 #prediction{
@@ -47,20 +69,36 @@ color:#22c55e;
 
 <body>
 
-<h1>Greedy Cat Predictor</h1>
+<h1>Greedy Cat Max AI</h1>
 
-<input id="resultInput" placeholder="enter result">
+<div class="foods">
 
-<button onclick="addResult()">
-Add Result
-</button>
+<button onclick="add('corn')">🌽 Corn</button>
+<button onclick="add('tomato')">🍅 Tomato</button>
+<button onclick="add('carrot')">🥕 Carrot</button>
+<button onclick="add('pepper')">🫑 Pepper</button>
+
+<button onclick="add('fish')">🐟 Fish</button>
+<button onclick="add('shrimp')">🍤 Shrimp</button>
+<button onclick="add('cow')">🐄 Cow</button>
+<button onclick="add('chicken')">🐔 Chicken</button>
+
+</div>
 
 <h3>History</h3>
-
 <div id="history"></div>
 
-<h3>Top Picks</h3>
+<h3>Statistics</h3>
 
+<table id="stats">
+<tr>
+<th>Food</th>
+<th>Count</th>
+<th>%</th>
+</tr>
+</table>
+
+<h3>Top Picks</h3>
 <div id="prediction"></div>
 
 <script>
@@ -72,77 +110,69 @@ const foods=[
 
 let history=[]
 
-function addResult(){
+function add(food){
 
-let value=document
-.getElementById("resultInput")
-.value.toLowerCase()
+history.push(food)
 
-if(!value) return
-
-history.push(value)
-
-document.getElementById("history")
-.innerText=history.join(" → ")
-
-predict()
+update()
 
 }
 
-function predict(){
+function update(){
 
-let score={}
+document.getElementById("history").innerText=
+history.join(" → ")
 
-foods.forEach(f=>score[f]=0)
+calculate()
 
-history.forEach((food,i)=>{
-
-score[food]+=2
-
-if(i>history.length-5){
-score[food]+=3
 }
 
+function calculate(){
+
+let total=history.length
+
+let counts={}
+
+foods.forEach(f=>counts[f]=0)
+
+history.forEach(food=>{
+counts[food]++
 })
+
+let table=
+"<tr><th>Food</th><th>Count</th><th>%</th></tr>"
+
+let scores=[]
 
 foods.forEach(food=>{
 
-let last=history.lastIndexOf(food)
+let count=counts[food]
 
-if(last==-1){
+let percent= total? ((count/total)*100).toFixed(1):0
 
-score[food]+=2
+table+=
+"<tr><td>"+food+"</td><td>"+count+"</td><td>"+percent+"%</td></tr>"
 
-}else{
-
-let gap=history.length-last
-
-if(gap>6){
-score[food]+=4
-}
-
-}
+scores.push({
+food:food,
+score:percent
+})
 
 })
 
-if(history.slice(-1)[0]=="chicken"){
-score["chicken"]-=10
-}
+document.getElementById("stats").innerHTML=table
 
-let sorted=Object
-.entries(score)
-.sort((a,b)=>b[1]-a[1])
+scores.sort((a,b)=>b.score-a.score)
 
-let picks=
-sorted.slice(0,5)
-.map(x=>x[0])
+let top5=scores.slice(0,5).map(x=>x.food)
 
-document.getElementById("prediction")
-.innerText=picks.join(" , ")
+document.getElementById("prediction").innerText=
+top5.join(" , ")
 
 }
 
 </script>
 
 </body>
+
 </html>
