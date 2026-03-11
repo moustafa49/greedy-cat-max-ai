@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
-
 <meta charset="UTF-8">
-<title>Greedy Cat Max AI ULTRA</title>
-
-<style>
+<title>Greedy Cat Max AI ULTRA</title><style>
 
 body{
 font-family:Arial;
@@ -20,76 +16,62 @@ h1{color:#22c55e}
 .foods{
 display:grid;
 grid-template-columns:repeat(4,1fr);
-gap:10px;
-margin-top:20px;
+gap:8px;
+margin-bottom:12px;
 }
 
 .foods button{
-padding:14px;
-font-size:26px;
+padding:12px;
+font-size:20px;
 background:#1e293b;
+color:white;
 border:none;
-border-radius:10px;
+border-radius:8px;
 cursor:pointer;
 }
 
-.foods button:hover{background:#22c55e}
-
-.section{margin-top:25px}
-
-.strategy{
-background:#1e293b;
-padding:10px;
-border-radius:10px;
-margin-top:10px;
-font-size:18px;
+.foods button:hover{
+background:#334155;
 }
 
-.safe{border-left:6px solid #22c55e}
-.balanced{border-left:6px solid #eab308}
-.aggressive{border-left:6px solid #ef4444}
+button{
+padding:6px 12px;
+margin:6px;
+}
 
 table{
 margin:auto;
-margin-top:10px;
 border-collapse:collapse;
 }
 
 td,th{
-border:1px solid #334155;
 padding:6px 10px;
+border:1px solid #334155;
 }
 
-.bar{
-height:8px;
-background:#22c55e;
-border-radius:5px;
+.strategy{
+width:80%;
+margin:auto;
+margin-top:10px;
+padding:10px;
+border-radius:6px;
 }
 
-#overlay{
-position:fixed;
-bottom:10px;
-right:10px;
+.safe{background:#1e3a8a}
+.balanced{background:#92400e}
+.aggressive{background:#7f1d1d}
+
+.section{
+margin-top:16px;
+}
+
+canvas{
 background:#111827;
-padding:12px;
-border-radius:12px;
-box-shadow:0 0 12px rgba(0,0,0,0.6);
-font-size:16px;
-display:none;
+border-radius:10px;
+margin-top:10px;
 }
 
-</style>
-</head>
-
-<body>
-
-<h1>Greedy Cat Max AI</h1>
-
-<button onclick="toggleOverlay()">Toggle Overlay</button>
-
-<div class="foods">
-
-<button onclick="add('corn')">🌽</button>
+</style></head><body><h1>Greedy Cat Max AI ULTRA</h1><div class="foods"><button onclick="add('corn')">🌽</button>
 <button onclick="add('tomato')">🍅</button>
 <button onclick="add('carrot')">🥕</button>
 <button onclick="add('pepper')">🌶</button>
@@ -99,331 +81,282 @@ display:none;
 <button onclick="add('cow')">🐄</button>
 <button onclick="add('chicken')">🐔</button>
 
-</div>
-
-<div class="section">
-<button onclick="undo()">Undo</button>
+</div><button onclick="undo()">Undo</button>
 <button onclick="reset()">Reset</button>
-</div>
 
 <div class="section">
-<h3>Last 20</h3>
+<h3>Last 20 Rounds</h3>
 <div id="history"></div>
-</div>
-
-<div class="section">
+</div><div class="section">
 <h3>Probability Model</h3>
-<table id="prob"></table>
-</div>
-
-<div class="section">
-<h3>Strategies</h3>
-<div id="safe" class="strategy safe"></div>
-<div id="balanced" class="strategy balanced"></div>
-<div id="aggressive" class="strategy aggressive"></div>
-</div>
-
-<div class="section">
+<table id="stats">
+<tr><th>Food</th><th>Score</th></tr>
+</table>
+</div><div class="strategy safe" id="safe"></div>
+<div class="strategy balanced" id="balanced"></div>
+<div class="strategy aggressive" id="aggressive"></div><div class="section">
 <h3>Confidence</h3>
 <div id="confidence"></div>
-</div>
-
-<div class="section">
+</div><div class="section">
 <h3>Suggested Bet</h3>
-<div id="autobet"></div>
-</div>
-
-<div class="section">
+<div id="bet"></div>
+</div><div class="section">
 <h3>Wave Detector</h3>
 <div id="wave"></div>
-</div>
-
-<div class="section">
+</div><div class="section">
 <h3>Bias Detector</h3>
-<div id="biasdetect"></div>
-</div>
-
-<div class="section">
+<div id="bias"></div>
+</div><div class="section">
 <h3>Pattern Prediction</h3>
-<div id="patternpredict"></div>
-</div>
-
-<div class="section">
+<div id="pattern"></div>
+</div><div class="section">
 <h3>Next Round</h3>
-<div id="nextforecast"></div>
-</div>
-
-<div class="section">
-<h3>Session Reset Detector</h3>
-<div id="sessionreset"></div>
-</div>
-
-<div class="section">
+<div id="next"></div>
+</div><div class="section">
 <h3>Heat Map</h3>
-<div id="heatmap"></div>
-</div>
-
-<div id="overlay">
-<div id="overlayPrediction"></div>
-</div>
-
-<script>
+<div id="heat"></div>
+</div><div class="section">
+<h3>Absence</h3>
+<div id="absence"></div>
+</div><div class="section">
+<h3>Monte Carlo Simulation</h3>
+<div id="monte"></div>
+</div><div class="section">
+<h3>Hot / Cold Indicator</h3>
+<div id="hotcold"></div>
+</div><div class="section">
+<h3>Radar Probability</h3>
+<canvas id="radar" width="300" height="300"></canvas>
+</div><div class="section">
+<h3>AI Accuracy</h3>
+<div id="accuracy"></div>
+</div><script>
 
 const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
-
-const emoji={
-corn:"🌽",tomato:"🍅",carrot:"🥕",pepper:"🌶",
-fish:"🐟",shrimp:"🦐",cow:"🐄",chicken:"🐔"
-}
 
 const veg=["corn","tomato","carrot","pepper"]
 const meat=["fish","shrimp","cow","chicken"]
 
-const baseChance={
-corn:18,tomato:18,carrot:18,pepper:18,
-shrimp:10,cow:8,fish:6,chicken:4
+const emoji={
+corn:"🌽",
+tomato:"🍅",
+carrot:"🥕",
+pepper:"🌶",
+fish:"🐟",
+shrimp:"🦐",
+cow:"🐄",
+chicken:"🐔"
 }
 
-let history=JSON.parse(localStorage.getItem("catHistory"))||[]
+let history=JSON.parse(localStorage.getItem("gc_history"))||[]
+let correct=JSON.parse(localStorage.getItem("gc_correct"))||0
+let predictions=JSON.parse(localStorage.getItem("gc_predictions"))||0
 
-update()
+function save(){
+localStorage.setItem("gc_history",JSON.stringify(history.slice(-600)))
+localStorage.setItem("gc_correct",correct)
+localStorage.setItem("gc_predictions",predictions)
+}
 
 function add(food){
+
+if(window.lastPrediction){
+predictions++
+if(window.lastPrediction.includes(food)) correct++
+}
+
 history.push(food)
-if(history.length>600)history.shift()
-localStorage.setItem("catHistory",JSON.stringify(history))
+
+save()
 update()
 }
 
 function undo(){
 history.pop()
-localStorage.setItem("catHistory",JSON.stringify(history))
+save()
 update()
 }
 
 function reset(){
 history=[]
-localStorage.removeItem("catHistory")
+correct=0
+predictions=0
+save()
 update()
+}
+
+function count(food){
+return history.filter(x=>x==food).length
+}
+
+function absence(food){
+for(let i=history.length-1;i>=0;i--){
+if(history[i]==food) return history.length-i-1
+}
+return history.length
 }
 
 function update(){
 
 let last20=history.slice(-20)
 
-document.getElementById("history").innerText=
+document.getElementById("history").innerHTML=
 last20.map(x=>emoji[x]).join(" ")
 
-model()
+let stats={}
+let table="<tr><th>Food</th><th>Score</th></tr>"
 
-heatmap()
+foods.forEach(f=>{
 
-patternPrediction()
+let freq=count(f)
+let miss=absence(f)
+let trend=history.slice(-10).filter(x=>x==f).length
 
-waveDetector()
+let score=(freq*1.2)+(miss*0.8)+(trend*3)
 
-sessionResetDetector()
+stats[f]=score
+
+table+=`<tr><td>${emoji[f]} ${f}</td><td>${score.toFixed(1)}</td></tr>`
+})
+
+document.getElementById("stats").innerHTML=table
+
+let sorted=Object.entries(stats).sort((a,b)=>b[1]-a[1])
+
+let vegTop=sorted.filter(x=>veg.includes(x[0])).slice(0,3)
+let meatTop=sorted.filter(x=>meat.includes(x[0])).slice(0,2)
+
+let picks=[...vegTop,...meatTop].map(x=>x[0])
+
+window.lastPrediction=picks
+
+document.getElementById("bet").innerHTML=picks.map(x=>emoji[x]).join(" ")
+
+document.getElementById("next").innerHTML=picks.map(x=>emoji[x]).join(" ")
+
+let confidence=Math.min(90,(picks.reduce((a,b)=>a+stats[b],0)/20)*10)
+
+document.getElementById("confidence").innerHTML=confidence.toFixed(1)+"%"
+
+let vegCount=last20.filter(x=>veg.includes(x)).length
+let meatCount=last20.filter(x=>meat.includes(x)).length
+
+document.getElementById("wave").innerHTML=
+vegCount>meatCount?"Vegetable wave":"Meat wave"
+
+document.getElementById("bias").innerHTML=
+emoji[sorted[0][0]]+" hot"
+
+document.getElementById("pattern").innerHTML=
+last20.slice(-3).map(x=>emoji[x]).join(" → ")
+
+document.getElementById("heat").innerHTML=
+history.slice(-40).map(x=>emoji[x]).join(" ")
+
+document.getElementById("absence").innerHTML=
+foods.map(f=>emoji[f]+" "+absence(f)).join(" | ")
+
+document.getElementById("safe").innerHTML=
+"SAFE: "+sorted.slice(0,5).map(x=>emoji[x[0]]).join(" ")
+
+document.getElementById("balanced").innerHTML=
+"BALANCED: "+sorted.slice(0,4).map(x=>emoji[x[0]]).join(" ")
+
+document.getElementById("aggressive").innerHTML=
+"AGGRESSIVE: "+sorted.slice(0,3).map(x=>emoji[x[0]]).join(" ")
+
+let acc = predictions ? ((correct/predictions)*100).toFixed(1) : 0
+
+document.getElementById("accuracy").innerHTML=
+acc+"% ("+correct+"/"+predictions+")"
+
+monteCarlo(stats)
+hotCold(stats)
+radar(stats)
 
 }
 
-function model(){
+function monteCarlo(stats){
 
-let counts={}
-foods.forEach(f=>counts[f]=0)
+let sim={}
+foods.forEach(f=>sim[f]=0)
 
-history.forEach(f=>counts[f]++)
+for(let i=0;i<10000;i++){
 
-let table="<tr><th>Food</th><th>Score</th></tr>"
+let total=Object.values(stats).reduce((a,b)=>a+b,0)
 
-let scores=[]
+let r=Math.random()*total
+let acc=0
 
-foods.forEach(food=>{
+for(let f in stats){
 
-let freq=(counts[food]/history.length||0)*100
+acc+=stats[f]
 
-let last=history.lastIndexOf(food)
+if(r<=acc){
+sim[f]++
+break
+}
 
-let absence= last==-1 ? history.length : history.length-last-1
+}
 
-let trend=history.slice(-10).filter(x=>x==food).length
+}
 
-let score=
-baseChance[food]*0.4+
-freq*0.5+
-absence*0.5+
-trend*3
+let txt=""
 
-scores.push({food:food,score:score})
+foods.forEach(f=>{
+let p=(sim[f]/10000*100).toFixed(1)
+txt+=emoji[f]+" "+p+"% "
+})
 
-let bar=Math.min(score,100)
+document.getElementById("monte").innerHTML=txt
 
-table+="<tr><td>"+emoji[food]+" "+food+
-"</td><td>"+bar.toFixed(1)+
-"<div class='bar' style='width:"+bar+"%'></div></td></tr>"
+}
+
+function hotCold(stats){
+
+let sorted=Object.entries(stats).sort((a,b)=>b[1]-a[1])
+
+let hot=sorted.slice(0,2).map(x=>emoji[x[0]]).join(" ")
+let cold=sorted.slice(-2).map(x=>emoji[x[0]]).join(" ")
+
+document.getElementById("hotcold").innerHTML=
+"🔥 Hot: "+hot+" | ❄ Cold: "+cold
+
+}
+
+function radar(stats){
+
+let canvas=document.getElementById("radar")
+let ctx=canvas.getContext("2d")
+
+ctx.clearRect(0,0,300,300)
+
+let cx=150
+let cy=150
+let r=120
+
+let entries=Object.entries(stats)
+
+entries.forEach((e,i)=>{
+
+let angle=(Math.PI*2/entries.length)*i
+
+let x=cx+r*Math.cos(angle)
+let y=cy+r*Math.sin(angle)
+
+ctx.beginPath()
+ctx.moveTo(cx,cy)
+ctx.lineTo(x,y)
+ctx.strokeStyle="#334155"
+ctx.stroke()
+
+ctx.fillText(emoji[e[0]],x,y)
 
 })
 
-document.getElementById("prob").innerHTML=table
-
-strategy(scores)
-
-confidence(scores)
-
-autoBet(scores)
-
-hiddenBias(scores)
-
-nextForecast(scores)
-
 }
 
-function strategy(scores){
+update()
 
-scores.sort((a,b)=>b.score-a.score)
-
-let vegScores=scores.filter(x=>veg.includes(x.food))
-let meatScores=scores.filter(x=>meat.includes(x.food))
-
-function build(v,m){
-
-let final=[...vegScores.slice(0,v),...meatScores.slice(0,m)]
-
-let total=final.reduce((s,x)=>s+x.score,0)
-
-return final.map(x=>emoji[x.food]+" "+Math.round(x.score/total*100)+"%").join(" ")
-
-}
-
-document.getElementById("safe").innerText="SAFE: "+build(3,3)
-document.getElementById("balanced").innerText="BALANCED: "+build(3,2)
-document.getElementById("aggressive").innerText="AGGRESSIVE: "+build(2,2)
-
-document.getElementById("overlayPrediction").innerText=build(3,2)
-
-}
-
-function confidence(scores){
-
-scores.sort((a,b)=>b.score-a.score)
-
-let total=scores.reduce((s,x)=>s+x.score,0)
-let best=scores[0].score
-
-document.getElementById("confidence").innerText=
-((best/total)*100).toFixed(1)+"%"
-
-}
-
-function autoBet(scores){
-
-scores.sort((a,b)=>b.score-a.score)
-
-let picks=scores.slice(0,4)
-
-document.getElementById("autobet").innerText=
-picks.map(x=>emoji[x.food]).join(" ")
-
-}
-
-function hiddenBias(scores){
-
-scores.sort((a,b)=>b.score-a.score)
-
-let avg=scores.reduce((s,x)=>s+x.score,0)/scores.length
-let top=scores[0]
-
-if(top.score-avg>8)
-document.getElementById("biasdetect").innerText=emoji[top.food]+" boosted"
-else
-document.getElementById("biasdetect").innerText="No bias"
-
-}
-
-function nextForecast(scores){
-
-scores.sort((a,b)=>b.score-a.score)
-
-let top=scores.slice(0,3)
-
-document.getElementById("nextforecast").innerText=
-top.map(x=>emoji[x.food]).join(" ")
-
-}
-
-function waveDetector(){
-
-let last30=history.slice(-30)
-
-let vegCount=last30.filter(x=>veg.includes(x)).length
-let meatCount=last30.filter(x=>meat.includes(x)).length
-
-if(vegCount>meatCount*1.5)
-document.getElementById("wave").innerText="Vegetable wave"
-
-else if(meatCount>vegCount*1.5)
-document.getElementById("wave").innerText="Meat wave"
-
-else
-document.getElementById("wave").innerText="Balanced"
-
-}
-
-function sessionResetDetector(){
-
-if(history.length<40)return
-
-let recent=history.slice(-20)
-let previous=history.slice(-40,-20)
-
-let diff=0
-
-for(let i=0;i<20;i++)
-if(recent[i]!=previous[i])diff++
-
-if(diff>12)
-document.getElementById("sessionreset").innerText="Session reset likely"
-
-else
-document.getElementById("sessionreset").innerText="Session stable"
-
-}
-
-function patternPrediction(){
-
-if(history.length<10)return
-
-let last=history[history.length-1]
-
-let next={}
-foods.forEach(f=>next[f]=0)
-
-for(let i=0;i<history.length-1;i++)
-if(history[i]==last)
-next[history[i+1]]++
-
-let best=null
-let count=0
-
-for(let f in next)
-if(next[f]>count){count=next[f];best=f}
-
-if(best)
-document.getElementById("patternpredict").innerText=
-"After "+emoji[last]+" → "+emoji[best]
-
-}
-
-function heatmap(){
-document.getElementById("heatmap").innerText=
-history.slice(-30).map(x=>emoji[x]).join(" ")
-}
-
-function toggleOverlay(){
-let o=document.getElementById("overlay")
-o.style.display=o.style.display=="none"?"block":"none"
-}
-
-</script>
-
-</body>
+</script></body>
 </html>
