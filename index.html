@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Greedy Cat Predictor</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+padding:20px;
+}
+
+input{
+padding:10px;
+font-size:16px;
+}
+
+button{
+padding:10px 20px;
+margin:10px;
+}
+
+#prediction{
+font-size:22px;
+color:#22c55e;
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Greedy Cat Predictor</h1>
+
+<input id="resultInput" placeholder="enter result">
+<button onclick="addResult()">Add Result</button>
+
+<h3>History</h3>
+<div id="history"></div>
+
+<h3>Top Picks</h3>
+<div id="prediction"></div>
+
+<script>
+
+const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
+
+let history=[]
+
+function addResult(){
+
+let value=document.getElementById("resultInput").value.toLowerCase()
+
+history.push(value)
+
+document.getElementById("history").innerText=history.join(" → ")
+
+predict()
+
+}
+
+function predict(){
+
+let score={}
+
+foods.forEach(f=>score[f]=0)
+
+history.forEach(food=>{
+score[food]+=1
+})
+
+let sorted=Object.entries(score)
+.sort((a,b)=>b[1]-a[1])
+.slice(0,5)
+
+let picks=sorted.map(x=>x[0])
+
+document.getElementById("prediction").innerText=picks.join(" , ")
+
+}
+
+</script>
+
+</body>
+</html>
